@@ -1,0 +1,44 @@
+---
+title: "Stats 230 - HW1"
+author: "Pieter Derdeyn"
+date: "1/14/2022"
+repo: "https://github.com/pderdeyn/Stats230pieter"
+output: html_document
+vignette: >
+  %\VignetteIndexEntry{my-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Multiply Some Matrices
+
+Let's multiply matrices. We use a function, `mat_mult()`, from my package available at https://github.com/pderdeyn/Stats230pieter. `mat_mult` computes the product $A\times B\times x$. This function uses an optional boolean argument, `left`, which determines whether the left product, $A\times B$, or the right product, $B \times x$, is computed first. The default argument is `left=TRUE`. 
+
+```{r matrix_mult}
+#install.packages("../",repos=NULL,type="source")
+#devtools::install_github('https://github.com/pderdeyn/Stats230pieter')
+library(Stats230pieter)
+values<-seq(0,100)
+A<-matrix(sample(values,100),ncol=10)
+B<-matrix(sample(values,100),ncol=10)
+x<-c(sample(values,10))
+mat_mult(A,B,x)
+mat_mult(A,B,x,left=FALSE)
+```
+
+## Benchmarking
+
+Let's benchmark multiplying matrices
+
+```{r benchmark}
+library(bench)
+b<-bench::mark(mat_mult(A,B,x,left=TRUE),
+            mat_mult(A,B,x,left=FALSE))
+plot(b)
+```
+
+Hence, it appears from this experiment that computing the right product, $B\times x$, first leads to faster computation. It is interesting to see that this expression has multimodal distribution, where the left product variation has just one peak. 
