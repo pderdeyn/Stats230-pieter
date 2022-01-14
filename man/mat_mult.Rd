@@ -11,10 +11,12 @@ mat_mult(A, B, x, left = TRUE)
 
 \item{B}{a square matrix with the same dim as A}
 
+\item{x}{a vector with length equal to length of A}
+
 \item{left}{a boolean option that determines which product is computed first}
 }
 \value{
-matrix product A x B x x
+matrix product \eqn{A \times B \times x}
 }
 \description{
 Multiple two matrices and a vector
