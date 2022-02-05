@@ -1,0 +1,68 @@
+---
+title: "Stats230-Pieter"
+author: "Pieter Derdeyn"
+date: "2/4/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Q7: MVN Simulation
+
+We will be using R functions from my package at https://github.com/pderdeyn/Stats230pieter in order to complete this assignment. 
+
+For the first of the programming questions, we are interested in simulating from a MVN distribution using a Cholesky decomposition. Using the R chol() function, and the algorithm we learned from class, we create a function mvn_chol() to do this computation. Note that we use a function posdef from the internet to generate a random positive definite matrix to use as a covariance matrix.
+
+```{r mvn_simulation}
+#install.packages("../",repos=NULL,type="source")
+#devtools::install_github('https://github.com/pderdeyn/Stats230pieter')
+library(Stats230pieter)
+n<-4
+N<-100
+mu<-runif(n,-5,5)
+sigma<-posdef(n)
+D<-mvn_chol(mu,sigma,N)
+```
+We can compare the sample means of the simulated data with the given mean as validation
+```{r validate_means}
+mu
+rowMeans(D)
+```
+We also compare the sample covariance with the given covariance matrix
+```{r validate_cov}
+sigma
+cov(t(D))
+```
+By inspection, we conclude that both means and covariance are close enough and that the MVN simulation is correctly implemented.
+
+
+## Q8: Regression
+
+For the next programming question, we are interested in using QR and SVD decompositions to perform regression. Using the internal R implementatoins of QR and SVD, and algorithms learned in class, we implement reg_qr and reg_svd in our package and use them below, on the provided data.
+
+```{r regression_qr}
+reg_data = read.csv("../data/homework2_regression.csv")
+x<-reg_data[2:dim(reg_data)[2]]
+y<-reg_data$y
+coef<-reg_qr(x,y)
+coef
+```
+```{r regression_svd}
+coef<-reg_svd(x,y)
+coef
+```
+
+Now that we have validated that both approaches get the same coefficients, let's benchmark them to see if either performs better.
+```{r benchmark_qr}
+library(bench)
+library(tibble)
+b1<-bench::mark(reg_qr(x,y))
+b2<-bench::mark(reg_svd(x,y))
+df <- b1
+df <- df %>% add_row(b2)
+plot(df)
+```
+
+SVD performs much faster. We suspect this is because there is no intensive matrix inversion or forward substitution required. The one matrix which needs to be inverted in SVD is the diagonal matrix of singular values, which is trivial to invert. We used the solve() function to solve a normal equation for QR decomposition approach. It is unsurprising that this is slower than matrix multiplication in the SVD approach.
