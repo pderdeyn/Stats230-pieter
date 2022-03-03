@@ -1,0 +1,165 @@
+---
+title: "Stats230-Pieter"
+author: "Pieter Derdeyn"
+date: "3/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Q1 Logistic Regression
+
+First we are fitting logistic regression to data using two optimization methods. We begin by loading a dataset related to heart-disease, and optimize a logistic regression model using gradient descent. Our gradient descent algorithm is implemented in the function `logreg_fit()` as the default method.
+
+```{r logreg}
+install.packages("../",repos=NULL,type="source")
+#devtools::install_github('https://github.com/pderdeyn/Stats230pieter')
+library(Stats230pieter)
+t<-read.table("http://www-stat.stanford.edu/~tibs/ElemStatLearn/datasets/SAheart.data",
+           sep=",",head=T,row.names=1)
+X<-t[1:9]
+X$famhist = X$famhist=="Present"
+Xscale<-scale(X)
+Xscale<-as.matrix(Xscale)
+y<-t$chd
+modelfit<-logreg_fit(Xscale,y,iter=500,stepsize=0.001,tol=0.01)
+theta<-modelfit[[1]]
+LLs<-modelfit[[2]]
+plot(seq(length(LLs)),LLs,xlab='iterations',ylab='log likelihood')
+barplot(theta,las=2)
+print('Asymptotic confidence intervals for each feature')
+for (i in seq(9)) {
+ cat(sprintf("%s: %f +/- %f\n", colnames(X)[i],theta[i], modelfit[[3]][i]))
+}
+```
+
+In the above plots, we can see the log likelihoods converge after 40 iterations. In the next plot, we visualize the theta parameter for each feature. This will be useful to compare with other model fits. We also printed on the console the asymptotic confidence intervals for each of the model parameters. We took the last 21 iterations of model parameters and found a 95% Wald confidence interval.
+
+Next, we try the Newton-Raphson method to fit our logistic regression model, again using our `logreg_fit` function.
+
+
+```{r logreg_newton}
+modelfit<-logreg_fit(Xscale,y,iter=500,tol=0.001,method='newton-raphson')
+theta<-modelfit[[1]]
+LLs<-modelfit[[2]]
+plot(seq(length(LLs)),LLs,xlab='iterations',ylab='log likelihood')
+barplot(t(theta),las=2)
+print('Asymptotic confidence intervals for each feature')
+for (i in seq(9)) {
+ cat(sprintf("%s: %f +/- %f\n", colnames(X)[i],theta[i], modelfit[[3]][i]))
+}
+```
+
+This method gets to the max log likelihood value much quicker. By the second step it is nearly there, compared to the initial condition. The algorithm completes the same stopping condition as gradient descent in half the number of iteratoins. Theta parameter values look about the same as before. Confidence intervals are also about the same.
+
+Lastly, we benchmark the two appraoches to compare runtime
+
+```{r log_bench}
+library(bench)
+library(tibble)
+b1<-bench::mark(logreg_fit(Xscale,y,iter=500,stepsize=0.001,tol=0.01,method='gradient descent'),check=FALSE,min_iterations = 20)
+b2<-bench::mark(logreg_fit(Xscale,y,iter=500,tol=0.008,method='newton-raphson'),check=FALSE,min_iterations = 20)
+df <- b1
+df <- df %>% add_row(b2)
+df['expression']<-c('gradient descent','newton-raphson')
+plot(df)
+```
+
+Newton-raphson is much faster that gradient descent, which we would expect from our understanding of the algorithm's quadratic convergnece, compared to gradient descent's linear convergence.
+
+## Q2 EM algorithm for ABO Blood
+
+Here we implement the EM algirotihm for the ABO blood type example in our new function `em_bloodtype()`. We take some given observed phenotypes, come up with an initial guess, and then run EM to get population allele frequency estimates.
+
+```{r em_blood}
+# observed phenotypes
+nA<-0.06
+nAB<-0.04
+nB<-0.55
+nO<-0.35
+
+# initial guesses for allele frequencies
+pA<-2/3*nA+1/2*nAB
+pB<-2/3*nB+1/2*nAB
+pO<-1/3*nA+1/3*nB+nO
+
+#pA<-0.1
+#pB<-0.3
+#pO<-0.6
+
+
+result<-em_bloodtype(nA,nAB,nB,nO,pA,pB,pO,
+                     iter=10000,epsilon=0.00001,delta=0.00001)
+LLs<-result[[5]]
+plot(seq(length(LLs)),LLs,type='b',xlab='iterations',ylab='log likelihood')
+ymax<-max(result[[1]],result[[2]],result[[3]])
+plot(seq(length(result[[1]])),result[[1]],col='red',ylim = c(0,ymax),type='b',
+     xlab='iterations',ylab='probability')
+lines(seq(length(result[[2]])),result[[2]],col='blue',type='b')
+lines(seq(length(result[[3]])),result[[3]],col='green',type='b')
+legend(7,0.55,legend=c("pA","pB","pO"),col=c("red","blue","green"),lty=1)
+```
+
+We see that EM passes both tolerance values, epsilon for the frequency estimates and delta for the observed likelihoods. It does this within 8 iterations, so quite fast. The inferred population allele frequencies are quite close to what Dr. Minin says the data was generated with.
+
+## Q3 Occasional Dishonest Casino
+
+First we simulate a sequence of 100 hidden states and die rolls, using our function `hmm_casino_simulate`.
+
+```{r hmm_sim}
+P<-matrix(c(0.98,0.05,0.02,0.95),ncol=2)
+E<-matrix(c(rep(1/6,6),rep(1/10,2),1/2,rep(1/10,3)),nrow=2,byrow=TRUE)
+v<-c(1/2,1/2)
+hmm_sim <- hmm_casino_simulate(P,E,v,n=100)
+x=hmm_sim[[1]]
+y=hmm_sim[[2]]
+
+par(mar=c(5,4,4,10), xpd=TRUE)
+plot(seq(0,100),x,col='red',ylim = c(0.5,6.5),type='b',pch=20,cex=0.3,
+     xlab='iterations',ylab='state')
+lines(seq(0,100),y,col='blue',type='b',pch=20,cex=1)
+legend("topright",inset=c(-0.4,0),legend=c("hidden state","die roll"), col=c("red","blue"),lty=1,pch=20)
+```
+
+Next we compute marginal probabilities for the die hidden states, using the observed states and the HMM probabilities (initial distribution, emission probs, and transition probs).
+
+
+```{r hmm_forwardbackward}
+result<-hmm_casino_forwardbackward(P,E,v,y)
+a<-result[[1]]
+b<-result[[2]]
+m<-result[[3]]
+y_inf <- (m[2,] > 0.5)+1
+par(mar=c(5,4,4,10), xpd=TRUE)
+plot(seq(0,100),x,col='red',ylim = c(0,2.5),type='b',pch=20,cex=0.3,
+     xlab='iterations',ylab='state',yaxt='n')
+axis(2, at=seq(1,2))
+axis(4, at=seq(0,1,0.5))
+mtext("probability",side=4,line=3,)
+lines(seq(0,100),m[2,],col='blue',type='b',pch=20,cex=0.3)
+legend("topright",inset=c(-0.4,0),legend=c("real","p(x=2)"), col=c("red","blue"),lty=1,pch=20)
+```
+
+We see that these marginals are pretty good at detecting when a hidden state change has occursed, especially when the hidden state remains constant for a couple dozen iterations before the next change.
+
+Lastly, we use Baum-Welch to estimate all parameters except for the first row of the emission probability matrix. We use our function, `hmm_casino_baumwelch`.
+
+
+```{r hmm_emission}
+bw_result<-hmm_casino_baumwelch(E[1,],x,y,iter=1000,eps=0.05)
+lls<-bw_result[[1]]
+P<-bw_result[[2]]
+E<-bw_result[[3]]
+v<-bw_result[[4]]
+plot(seq(length(lls)),lls,pch=20,cex=0.75,
+     xlab='iterations',ylab='log likelihood')
+print('Transition Probabilites')
+print(P)
+print('Emission Probabilities')
+print(E)
+print('Initial Distribution')
+print(v)
+```
+While the esimate for initial distribution is quite bad, all other parameters are estimated prety well. The probability of rolling a 3 while a loaded die is indeed much higher than the rest, and is actually quite close to the correct value of 1/2. The other emission probabilities for the loaded die are almost uniform and nearly close to 1/10. The transition probabilites aren't quite weighted correctly, but they are at least ordered correctly

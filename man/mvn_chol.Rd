@@ -14,7 +14,7 @@ mvn_chol(mu, sigma, N)
 \item{N}{number of relizations from MVN(mu,sigma)}
 }
 \value{
-N realizations from MVN distribution}
+N realizations from MVN distribution
 }
 \description{
 Simulation of MVN random vectors

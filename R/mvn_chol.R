@@ -5,7 +5,7 @@
 #' @param N number of relizations from MVN(mu,sigma)
 #' @examples
 #' mat_mult(cbind(c(1,2),c(3,4)),rbind(c(1,2),(3,4)),c(1,2),True)
-#' @return N realizations from MVN distribution}
+#' @return N realizations from MVN distribution
 #' @export
 mvn_chol <- function(mu,sigma,N){
   L<-chol(sigma)
