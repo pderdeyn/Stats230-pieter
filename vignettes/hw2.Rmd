@@ -16,7 +16,7 @@ We will be using R functions from my package at https://github.com/pderdeyn/Stat
 For the first of the programming questions, we are interested in simulating from a MVN distribution using a Cholesky decomposition. Using the R chol() function, and the algorithm we learned from class, we create a function mvn_chol() to do this computation. Note that we use a function posdef from the internet to generate a random positive definite matrix to use as a covariance matrix.
 
 ```{r mvn_simulation}
-#install.packages("../",repos=NULL,type="source")
+install.packages("../",repos=NULL,type="source")
 #devtools::install_github('https://github.com/pderdeyn/Stats230pieter')
 library(Stats230pieter)
 n<-4

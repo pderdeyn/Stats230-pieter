@@ -1,0 +1,89 @@
+---
+title: "Stats 230 - HW4"
+author: "Pieter Derdeyn"
+date: '2022-03-14'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+install.packages("../",repos=NULL,type="source")
+#devtools::install_github('https://github.com/pderdeyn/Stats230pieter')
+library(Stats230pieter)
+```
+
+## Problem 1
+
+For problem 1, we use Monte Carlo to sample 1000 distributions from a beta distribution. We then compute the second moment of the sample distribution and get a 95% confidence interval.
+
+```{r problem1}
+n<-1000
+x<-rbeta(n,4,2)
+y<-x^2
+sample_mean <-mean(y)
+sample_var <- var(y)
+cat(sprintf("E(X^2): %f\n", sample_mean))
+conf1<-sample_mean-1.96*sqrt(sample_var/n)
+conf2<-sample_mean+1.96*sqrt(sample_var/n)
+cat(sprintf("95%% confidence interval: (%f,%f)\n", conf1, conf2))
+```
+We also try the same experiment on a larger sample size. 
+
+```{r problem1_more}
+
+n<-1000000
+x<-rbeta(n,4,2)
+y<-x^2
+sample_mean <-mean(y)
+sample_var <- var(y)
+cat(sprintf("E(X^2): %f\n", sample_mean))
+conf1<-sample_mean-1.96*sqrt(sample_var/n)
+conf2<-sample_mean+1.96*sqrt(sample_var/n)
+cat(sprintf("95%% confidence interval: (%f,%f)\n", conf1, conf2))
+```
+
+We notice that of course the confidence interval shrinks for the larger sample size
+
+## Problem 2
+
+### Problem 2A
+
+The transition probability of going to $j$ from $i$ will be the product of the probability of proposing $j$ from $i$ and the probability of accepting the transition to $j$ from $i$, or
+
+$$ p_{ij} = a_{ij} q_{ij} = \frac{\pi_jq_{ji}}{\pi_jq_{ji}+\pi_iq_{ij}} q_{ij}$$
+
+### Problem 2B
+
+In order to prove that $\pi$ is a stationary distribution, we will show that we have detailed balance. 
+
+$$ \pi_{i}p_{ij} = \pi_{i} \frac{\pi_jq_{ji}}{\pi_jq_{ji}+\pi_iq_{ij}} q_{ij} = \pi_{j} \frac{\pi_iq_{ij}}{\pi_jq_{ji}+\pi_iq_{ij}} q_{ji} =  \pi_{j}p_{ji}$$
+From lecture, we know that, for a Markov chain on a countable space, if $\pi$ satisfies detailed balance than it also satisfies global balance, and thus is the stationary distribution. Hence $\pi$ is the stationary distribution for Barker's Markov chain
+
+
+## Problem 3
+
+### Problem 3A
+
+For a given $x_{cur}$, we get a proposal density $$q(x_{prop} | x_{cur}) = \frac{1}{x_{prop}\sigma \sqrt{2\pi}}\exp{-\frac{(\ln{(x_{prop})-x_{cur}})^2}{2\sigma^2}} $$
+
+### Problem 3B
+
+Since the transition densities are not symmetric, the acceptance ratio will be $$ \frac{\pi_{proposal}*q(x_{current}|x_{proposal})}{\pi_{current}*q(x_{proposal}|x_{current})} $$, since we are setting the target distribution as $beta(4,2)$, and we know the PDF for this distribution, we can write the acceptance ratio out as $$ \frac{x_{proposal}^{3} (1-x_{proposal})}{B(4,2)} * \left[ \frac{x_{current}^{3} (1-x_{current})}{B(4,2)}\right]^{-1}*\frac{q(x_{current}|x_{proposal})}{q(x_{proposal}|x_{current})} = \frac{x_{proposal}^{3} (1-x_{proposal})}{x_{current}^{3} (1-x_{current})}*\frac{q(x_{current}|x_{proposal})}{q(x_{proposal}|x_{current})} $$
+
+### Problem 3C
+
+Putting this all together, we implement a function `metropolis_hastings_beta` to simulate a markov chain with a stationary distribution of a beta distribution with some given parameters. We compare the markov chain trace and its histogram with the correct beta distribution and find they look similar. We also plot $Y=X^2$ trace and histogram, and then print $E(X^2)$, which appears very similar to what we found in Problem 1.
+
+
+```{r mh}
+x<-metropolis_hastings_beta(sigma=0.6,N=10000)
+y<-x^2
+plot(x)
+hist(x,breaks=20)
+p<-seq(0,1,length=100)
+plot(p,dbeta(p,4,2), type='l')
+
+plot(y)
+hist(y,breaks=20)
+print(mean(y))
+```

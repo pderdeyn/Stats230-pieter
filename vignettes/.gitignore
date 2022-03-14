@@ -1,2 +1,3 @@
 *.html
 *.R
+chunk-code-*.log

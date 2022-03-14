@@ -14,8 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 First we are fitting logistic regression to data using two optimization methods. We begin by loading a dataset related to heart-disease, and optimize a logistic regression model using gradient descent. Our gradient descent algorithm is implemented in the function `logreg_fit()` as the default method.
 
 ```{r logreg}
-install.packages("../",repos=NULL,type="source")
-#devtools::install_github('https://github.com/pderdeyn/Stats230pieter')
+#install.packages("../",repos=NULL,type="source")
+devtools::install_github('https://github.com/pderdeyn/Stats230pieter')
 library(Stats230pieter)
 t<-read.table("http://www-stat.stanford.edu/~tibs/ElemStatLearn/datasets/SAheart.data",
            sep=",",head=T,row.names=1)
